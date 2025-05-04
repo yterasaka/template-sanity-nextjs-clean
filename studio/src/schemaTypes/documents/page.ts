@@ -1,24 +1,37 @@
 import {defineField, defineType} from 'sanity'
 import {DocumentIcon} from '@sanity/icons'
 
-/**
- * Page schema.  Define and edit the fields for the 'page' content type.
- * Learn more: https://www.sanity.io/docs/schema-types
- */
-
 export const page = defineType({
   name: 'page',
   title: 'Page',
   type: 'document',
   icon: DocumentIcon,
+  // Add this field group
+  groups: [
+    {
+      name: 'content',
+      title: 'Content',
+    },
+    {
+      name: 'seo',
+      title: 'SEO',
+    },
+  ],
   fields: [
+    // Add language field (handled by the internationalization plugin)
+    defineField({
+      name: 'language',
+      type: 'string',
+      readOnly: true,
+      hidden: true,
+    }),
     defineField({
       name: 'name',
       title: 'Name',
       type: 'string',
       validation: (Rule) => Rule.required(),
+      group: 'content',
     }),
-
     defineField({
       name: 'slug',
       title: 'Slug',
@@ -28,17 +41,20 @@ export const page = defineType({
         source: 'name',
         maxLength: 96,
       },
+      group: 'content',
     }),
     defineField({
       name: 'heading',
       title: 'Heading',
       type: 'string',
       validation: (Rule) => Rule.required(),
+      group: 'content',
     }),
     defineField({
       name: 'subheading',
       title: 'Subheading',
       type: 'string',
+      group: 'content',
     }),
     defineField({
       name: 'pageBuilder',
@@ -47,7 +63,6 @@ export const page = defineType({
       of: [{type: 'callToAction'}, {type: 'infoSection'}],
       options: {
         insertMenu: {
-          // Configure the "Add Item" menu to display a thumbnail preview of the content type. https://www.sanity.io/docs/array-type#efb1fe03459d
           views: [
             {
               name: 'grid',
@@ -57,6 +72,20 @@ export const page = defineType({
           ],
         },
       },
+      group: 'content',
     }),
   ],
+  preview: {
+    select: {
+      title: 'name',
+      subtitle: 'language',
+      media: 'icon',
+    },
+    prepare({title, subtitle}) {
+      return {
+        title: title || 'Untitled',
+        subtitle: subtitle ? `Language: ${subtitle.toUpperCase()}` : 'No language',
+      }
+    },
+  },
 })

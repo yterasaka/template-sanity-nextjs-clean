@@ -2,11 +2,7 @@ import { MetadataRoute } from "next";
 import { sanityFetch } from "@/sanity/lib/live";
 import { sitemapData } from "@/sanity/lib/queries";
 import { headers } from "next/headers";
-
-/**
- * This file creates a sitemap (sitemap.xml) for the application. Learn more about sitemaps in Next.js here: https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
- * Be sure to update the `changeFrequency` and `priority` values to match your application's content.
- */
+import { defaultLanguage } from "@/app/context/LanguageContext";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const allPostsAndPages = await sanityFetch({
@@ -15,6 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const headersList = await headers();
   const sitemap: MetadataRoute.Sitemap = [];
   const domain: String = headersList.get("host") as string;
+
+  // Add default homepage
   sitemap.push({
     url: domain as string,
     lastModified: new Date(),
@@ -36,16 +34,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let url: string;
 
     for (const p of allPostsAndPages.data) {
+      const language = p.language || defaultLanguage;
+      const langPrefix = language !== defaultLanguage ? `/${language}` : "";
+
       switch (p._type) {
         case "page":
           priority = 0.8;
           changeFrequency = "monthly";
-          url = `${domain}/${p.slug}`;
+          url = `${domain}${langPrefix}/${p.slug}`;
           break;
         case "post":
           priority = 0.5;
           changeFrequency = "never";
-          url = `${domain}/posts/${p.slug}`;
+          url = `${domain}${langPrefix}/posts/${p.slug}`;
           break;
       }
       sitemap.push({

@@ -10,9 +10,10 @@ import PortableText from "@/app/components/PortableText";
 import { sanityFetch } from "@/sanity/lib/live";
 import { postPagesSlugs, postQuery } from "@/sanity/lib/queries";
 import { resolveOpenGraphImage } from "@/sanity/lib/utils";
+import { languages, defaultLanguage } from "@/app/lib/languages";
 
 type Props = {
-  params: Promise<{ slug: string }>;
+  params: { slug: string; lang: string };
 };
 
 /**
@@ -26,7 +27,16 @@ export async function generateStaticParams() {
     perspective: "published",
     stega: false,
   });
-  return data;
+
+  const paths: { slug: string; lang: string }[] = [];
+
+  // For each post, generate a path for each language
+  data.forEach((post: { slug: string; language: string }) => {
+    const lang = post.language || defaultLanguage;
+    paths.push({ slug: post.slug, lang });
+  });
+
+  return paths;
 }
 
 /**
@@ -35,15 +45,19 @@ export async function generateStaticParams() {
  */
 export async function generateMetadata(
   props: Props,
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const params = await props.params;
+  const paramsData = await props.params;
+  const { slug, lang } = paramsData;
+  const language = lang || defaultLanguage;
+
   const { data: post } = await sanityFetch({
     query: postQuery,
-    params,
+    params: { slug, language },
     // Metadata should never contain stega
     stega: false,
   });
+
   const previousImages = (await parent).openGraph?.images || [];
   const ogImage = resolveOpenGraphImage(post?.coverImage);
 
@@ -61,9 +75,17 @@ export async function generateMetadata(
 }
 
 export default async function PostPage(props: Props) {
-  const params = await props.params;
+  const paramsData = await props.params;
+  const { slug, lang } = paramsData;
+  const language = lang || defaultLanguage;
+
+  // Validate language
+  if (!languages.some((l) => l.id === language)) {
+    notFound();
+  }
+
   const [{ data: post }] = await Promise.all([
-    sanityFetch({ query: postQuery, params }),
+    sanityFetch({ query: postQuery, params: { slug, language } }),
   ]);
 
   if (!post?._id) {
@@ -106,7 +128,10 @@ export default async function PostPage(props: Props) {
       <div className="border-t border-gray-100">
         <div className="container my-12 lg:my-24 grid gap-12">
           <aside>
-            <Suspense>{await MorePosts({ skip: post._id, limit: 2 })}</Suspense>
+            <Suspense>
+              {/* @ts-ignore */}
+              <MorePosts skip={post._id} limit={2} language={language} />
+            </Suspense>
           </aside>
         </div>
       </div>

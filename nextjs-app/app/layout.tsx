@@ -14,6 +14,7 @@ import * as demo from "@/sanity/lib/demo";
 import { sanityFetch, SanityLive } from "@/sanity/lib/live";
 import { settingsQuery } from "@/sanity/lib/queries";
 import { resolveOpenGraphImage } from "@/sanity/lib/utils";
+import { LanguageProvider } from "./context/LanguageContext";
 import { handleError } from "./client-utils";
 
 /**
@@ -59,29 +60,32 @@ const inter = Inter({
 
 export default async function RootLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: { lang?: string };
 }) {
   const { isEnabled: isDraftMode } = await draftMode();
+  const language = params.lang || "en";
 
   return (
-    <html lang="en" className={`${inter.variable} bg-white text-black`}>
+    <html lang={language} className={`${inter.variable} bg-white text-black`}>
       <body>
         <section className="min-h-screen pt-24">
-          {/* The <Toaster> component is responsible for rendering toast notifications used in /app/client-utils.ts and /app/components/DraftModeToast.tsx */}
           <Toaster />
           {isDraftMode && (
             <>
               <DraftModeToast />
-              {/*  Enable Visual Editing, only to be rendered when Draft Mode is enabled */}
               <VisualEditing />
             </>
           )}
-          {/* The <SanityLive> component is responsible for making all sanityFetch calls in your application live, so should always be rendered. */}
           <SanityLive onError={handleError} />
-          <Header />
-          <main className="">{children}</main>
-          <Footer />
+
+          <LanguageProvider initialLanguage={language}>
+            <Header />
+            <main className="">{children}</main>
+            <Footer />
+          </LanguageProvider>
         </section>
         <SpeedInsights />
       </body>

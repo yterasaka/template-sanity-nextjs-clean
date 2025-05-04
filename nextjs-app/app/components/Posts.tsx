@@ -5,9 +5,11 @@ import { morePostsQuery, allPostsQuery } from "@/sanity/lib/queries";
 import { Post as PostType } from "@/sanity.types";
 import DateComponent from "@/app/components/Date";
 import OnBoarding from "@/app/components/Onboarding";
+import { defaultLanguage } from "@/app/context/LanguageContext";
 
-const Post = ({ post }: { post: PostType }) => {
+const Post = ({ post, language }: { post: PostType; language: string }) => {
   const { _id, title, slug, excerpt, date } = post;
+  const langPath = language !== defaultLanguage ? `/${language}` : "";
 
   return (
     <article
@@ -21,7 +23,7 @@ const Post = ({ post }: { post: PostType }) => {
       <h3 className="mt-3 text-2xl font-semibold">
         <Link
           className="hover:text-red-500 underline transition-colors"
-          href={`/posts/${slug}`}
+          href={`${langPath}/posts/${slug}`}
         >
           {title}
         </Link>
@@ -60,13 +62,15 @@ const Posts = ({
 export const MorePosts = async ({
   skip,
   limit,
+  language = defaultLanguage,
 }: {
   skip: string;
   limit: number;
+  language?: string;
 }) => {
   const { data } = await sanityFetch({
     query: morePostsQuery,
-    params: { skip, limit },
+    params: { skip, limit, language },
   });
 
   if (!data || data.length === 0) {
@@ -75,13 +79,22 @@ export const MorePosts = async ({
 
   return (
     <Posts heading={`Recent Posts (${data?.length})`}>
-      {data?.map((post: any) => <Post key={post._id} post={post} />)}
+      {data?.map((post: any) => (
+        <Post key={post._id} post={post} language={language} />
+      ))}
     </Posts>
   );
 };
 
-export const AllPosts = async () => {
-  const { data } = await sanityFetch({ query: allPostsQuery });
+export const AllPosts = async ({
+  language = defaultLanguage,
+}: {
+  language?: string;
+}) => {
+  const { data } = await sanityFetch({
+    query: allPostsQuery,
+    params: { language },
+  });
 
   if (!data || data.length === 0) {
     return <OnBoarding />;
@@ -93,7 +106,7 @@ export const AllPosts = async () => {
       subHeading={`${data.length === 1 ? "This blog post is" : `These ${data.length} blog posts are`} populated from your Sanity Studio.`}
     >
       {data.map((post: any) => (
-        <Post key={post._id} post={post} />
+        <Post key={post._id} post={post} language={language} />
       ))}
     </Posts>
   );
