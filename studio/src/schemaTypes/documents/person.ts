@@ -1,17 +1,19 @@
 import {UserIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
-/**
- * Person schema.  Define and edit the fields for the 'person' content type.
- * Learn more: https://www.sanity.io/docs/schema-types
- */
-
 export const person = defineType({
   name: 'person',
   title: 'Person',
   icon: UserIcon,
   type: 'document',
   fields: [
+    // Add language field (handled by the internationalization plugin)
+    defineField({
+      name: 'language',
+      type: 'string',
+      readOnly: true,
+      hidden: true,
+    }),
     defineField({
       name: 'firstName',
       title: 'First Name',
@@ -35,7 +37,6 @@ export const person = defineType({
           title: 'Alternative text',
           description: 'Important for SEO and accessibility.',
           validation: (rule) => {
-            // Custom validation to ensure alt text is provided if the image is present. https://www.sanity.io/docs/validation
             return rule.custom((alt, context) => {
               if ((context.document?.picture as any)?.asset?._ref && !alt) {
                 return 'Required'
@@ -54,18 +55,19 @@ export const person = defineType({
       validation: (rule) => rule.required(),
     }),
   ],
-  // List preview configuration. https://www.sanity.io/docs/previews-list-views
   preview: {
     select: {
       firstName: 'firstName',
       lastName: 'lastName',
       picture: 'picture',
+      language: 'language',
     },
     prepare(selection) {
+      const {firstName, lastName, picture, language} = selection
       return {
-        title: `${selection.firstName} ${selection.lastName}`,
-        subtitle: 'Person',
-        media: selection.picture,
+        title: `${firstName} ${lastName}`,
+        subtitle: language ? `Language: ${language.toUpperCase()}` : 'Person',
+        media: picture,
       }
     },
   },

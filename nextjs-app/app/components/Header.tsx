@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Header() {
   return (
@@ -60,10 +61,10 @@ export default function Header() {
             </span>
           </Link>
 
-          <nav className="">
+          <nav className="flex items-center">
             <ul
               role="list"
-              className="flex items-center gap-4 md:gap-6 leading-5 text-sm md:text-base tracking-tight font-normal"
+              className="flex items-center gap-4 md:gap-6 leading-5 text-sm md:text-base tracking-tight font-normal mr-4"
             >
               <li>
                 <Link href="/about" className="">
@@ -90,6 +91,9 @@ export default function Header() {
                 </Link>
               </li>
             </ul>
+
+            {/* Add Language Switcher */}
+            <LanguageSwitcher />
           </nav>
         </div>
       </div>

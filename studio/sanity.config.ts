@@ -1,14 +1,10 @@
-/**
- * This config is used to configure your Sanity Studio.
- * Learn more: https://www.sanity.io/docs/configuration
- */
-
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './src/schemaTypes'
 import {structure} from './src/structure'
 import {unsplashImageAsset} from 'sanity-plugin-asset-source-unsplash'
+import {documentInternationalization} from '@sanity/document-internationalization'
 import {
   presentationTool,
   defineDocuments,
@@ -21,6 +17,14 @@ import {assist} from '@sanity/assist'
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID || 'your-projectID'
 const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
 
+// Define supported languages
+const supportedLanguages = [
+  {id: 'en', title: 'English', isDefault: true},
+  {id: 'fr', title: 'French'},
+  {id: 'ja', title: 'Japanese'},
+  {id: 'es', title: 'Spanish'},
+]
+
 // URL for preview functionality, defaults to localhost:3000 if not set
 const SANITY_STUDIO_PREVIEW_URL = process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:3000'
 
@@ -32,12 +36,14 @@ const homeLocation = {
 
 // resolveHref() is a convenience function that resolves the URL
 // path for different document types and used in the presentation tool.
-function resolveHref(documentType?: string, slug?: string): string | undefined {
+function resolveHref(documentType?: string, slug?: string, language?: string): string | undefined {
+  const langPrefix = language && language !== 'en' ? `/${language}` : ''
+
   switch (documentType) {
     case 'post':
-      return slug ? `/posts/${slug}` : undefined
+      return slug ? `${langPrefix}/posts/${slug}` : undefined
     case 'page':
-      return slug ? `/${slug}` : undefined
+      return slug ? `${langPrefix}/${slug}` : undefined
     default:
       console.warn('Invalid document type:', documentType)
       return undefined
@@ -53,6 +59,11 @@ export default defineConfig({
   dataset,
 
   plugins: [
+    // Add the document internationalization plugin
+    documentInternationalization({
+      supportedLanguages,
+      schemaTypes: ['page', 'post', 'person'],
+    }),
     // Presentation tool configuration for Visual Editing
     presentationTool({
       previewUrl: {
@@ -62,7 +73,7 @@ export default defineConfig({
         },
       },
       resolve: {
-        // The Main Document Resolver API provides a method of resolving a main document from a given route or route pattern. https://www.sanity.io/docs/presentation-resolver-api#57720a5678d9
+        // Updated to support language prefixes in URLs
         mainDocuments: defineDocuments([
           {
             route: '/:slug',
@@ -72,8 +83,16 @@ export default defineConfig({
             route: '/posts/:slug',
             filter: `_type == "post" && slug.current == $slug || _id == $slug`,
           },
+          {
+            route: '/:lang/:slug',
+            filter: `_type == "page" && language == $lang && slug.current == $slug`,
+          },
+          {
+            route: '/:lang/posts/:slug',
+            filter: `_type == "post" && language == $lang && slug.current == $slug`,
+          },
         ]),
-        // Locations Resolver API allows you to define where data is being used in your application. https://www.sanity.io/docs/presentation-resolver-api#8d8bca7bfcd7
+        // Locations Resolver API updated with language support
         locations: {
           settings: defineLocations({
             locations: [homeLocation],
@@ -84,12 +103,13 @@ export default defineConfig({
             select: {
               name: 'name',
               slug: 'slug.current',
+              language: 'language',
             },
             resolve: (doc) => ({
               locations: [
                 {
                   title: doc?.name || 'Untitled',
-                  href: resolveHref('page', doc?.slug)!,
+                  href: resolveHref('page', doc?.slug, doc?.language)!,
                 },
               ],
             }),
@@ -98,16 +118,17 @@ export default defineConfig({
             select: {
               title: 'title',
               slug: 'slug.current',
+              language: 'language',
             },
             resolve: (doc) => ({
               locations: [
                 {
                   title: doc?.title || 'Untitled',
-                  href: resolveHref('post', doc?.slug)!,
+                  href: resolveHref('post', doc?.slug, doc?.language)!,
                 },
                 {
                   title: 'Home',
-                  href: '/',
+                  href: doc?.language && doc?.language !== 'en' ? `/${doc?.language}` : '/',
                 } satisfies DocumentLocation,
               ].filter(Boolean) as DocumentLocation[],
             }),
